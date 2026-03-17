@@ -14,7 +14,7 @@ public class User {
 
     public static void main(String[] args) {
         try {
-        	//Il secondo utente si connette alla socket esistente
+        	//Lo user si connette alla socket esistente creata dal server
         	Socket socket = new Socket(SERVER_ADDRESS, PORT);
         	System.out.println("Connected to the server");
         	
