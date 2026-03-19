@@ -14,42 +14,45 @@ public class User {
 
     public static void main(String[] args) {
         try {
-        	//Lo user si connette alla socket esistente creata dal server
+        	//Setup del canale di comunicazione con il server
         	Socket socket = new Socket(SERVER_ADDRESS, PORT);
         	System.out.println("Connected to the server");
         	
-        	//Stream di input e output per la comunicazione con il server
         	PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
             BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            
+            /////////////////////////////////////////////////
         	
+            
         	///////////DH Key Exchange///////////
+            /* Lo scambio DH si articola in 4 passi:
+             * 1) Il client riceve prime, generator e Yserver dal server
+             * 2) Con prime e generator ricevuti calcola Yclient = [generator^(secret)]mod(prime)
+             * 3) Il client invia Yclient al server
+             * 4) Il client calcola la dhKey condivisa con il server*/
+            
             BigInteger prime, generator;
-            //First Message
+            //1)
             System.out.println("Begin Key exchange...");
             prime = new BigInteger(in.readLine());
             generator = new BigInteger(in.readLine());
             System.out.println("Recieved prime number and corresponding generator");
             BigInteger Yserver = new BigInteger(in.readLine());
             System.out.println("Recieved server's 'Y' value");
-            
+            //2)
             DHHandler dhh = new DHHandler(prime, generator);
             BigInteger Yclient = dhh.getPublicKey();
+            //3)
             out.println(Yclient);
             System.out.println("Sent 'Y' Value: " + Yclient);
-            //Il client effettua le operazione complementari del server
-            //Riceve come prima cosa numero primo e generatore con cui costruire il proprio DHHandler
-            //Genera poi il proprio Yvalue e lo invia al server
-            
-            //Key generation
+            //4)
             System.out.println("Generating Key");
             Key dhKey = dhh.calculateKey(Yserver);
             System.out.println("Key was successfully generated");
             /////////////////////////////////////
             
-            //Initialization Vector
+            /* Il client riceve l'IV da usare durante la comunicazione dal server
+             * (implementazioni reali richiedono che lo scambio dell'IV per la cifratura a blocchi venga fatto per ogni messaggio)*/
             IvParameterSpec iv = new IvParameterSpec(in.readLine().getBytes()); //Si riceve l'IV scelto dal server
-            System.out.println("Sent IV");System.out.println(System.lineSeparator());
             
          	//Regular communication
             System.out.println(System.lineSeparator());System.out.println("Begin communication");System.out.println(System.lineSeparator());
@@ -63,7 +66,7 @@ public class User {
                     	String decypheredText = dhh.decrypt(cipherClient, dhKey, iv);
                         System.out.println(decypheredText);
                         if(decypheredText.compareTo("Bye") == 0) {
-                        	System.out.println("Client ended communications...");System.out.println(System.lineSeparator());
+                        	System.out.println("Server ended communications...");System.out.println(System.lineSeparator());
                     		break;
                         }
                     }

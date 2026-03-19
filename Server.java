@@ -13,56 +13,69 @@ public class Server {
 
     public static void main(String[] args) {
     	
-    	BigInteger prime = new BigInteger("67149524547258565451085655273701215867"); //Prime e generator rispettivamente Safe e Sophie Germain primes
-    	BigInteger generator = new BigInteger("33574762273629282725542827636850607933"); //e sono scelti staticamente per il testing
-    																				//Versioni effettive dello scambio richiedono che
-    																				//i due numeri siano generati casualmente
+    	/* Prime e generator rispettivamente Safe e Sophie Germain primes
+    	 * e sono scelti staticamente per il testing
+    	 * 
+    	 * Versioni effettive dello scambio richiedono che
+    	 * i due numeri siano scelti in modo casuale (ad esempio con TRNG)*/
+    	
+    	BigInteger prime = new BigInteger("67149524547258565451085655273701215867");
+    	BigInteger generator = new BigInteger("33574762273629282725542827636850607933");
+    	
+    	
+    	/* DHHandler è l'unità che si occupa di gestire le operazioni relative allo scambio DH
+    	 * e alla cifratura e decifratura dei messaggi*/
     	
     	DHHandler dhh = new DHHandler(prime, generator);
     	Scanner scanner = new Scanner(System.in);
     	
         try {
-        	///Setup del canale di comunicazione///
+        	/*Setup del canale di comunicazione*/
             ServerSocket serverSocket = new ServerSocket(PORT);
             System.out.println("Server is running and waiting for connections...");
 
             Socket clientSocket = serverSocket.accept();
             System.out.println("New client connected: " + clientSocket);
-            ///////////////////////////////////////
             
-            ///////////DH Key Exchange///////////
             PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
             BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+            /////////////////////////////////////
             
-            //First Message
+            ///////////DH Key Exchange///////////
+            /* Lo scambio DH si articola in 4 passi:
+             * 1) Il server invia al client prime e generator
+             * 2) Il server invia al client Yserver = [generator^(secret)]mod(prime)
+             * 3) Il server riceve dal client Yclient
+             * 4) Il server calcola la dhKey condivisa con il client*/
+            
+            //1)
             System.out.println("Begin Key exchange...");System.out.println(System.lineSeparator());
             out.println(prime);
             System.out.println("Sent prime:" + prime);
             out.println(generator);
             System.out.println("Sent generator:" + generator);
+            //2)
             BigInteger Yserver = dhh.getPublicKey();
             out.println(Yserver);
             System.out.println("Sent 'Y' Value: " + Yserver);System.out.println(System.lineSeparator());
-            //Il server invia il numero primo scelto il corrispondente generatore
-            //Il server usa poi il suo DHHandler per calcolare Yserver = g^a dove g è il generatore e a è il nonce randomInt generato casualmente
-            //e lo invia
-            
-            //Client response
+            //3)
             System.out.println("Waiting for client response...");System.out.println(System.lineSeparator());
             BigInteger Yclient = new BigInteger(in.readLine());
             System.out.println("Recieved client's 'Y' value");
             
-            //Key generation
+            //4)
             System.out.println("Generating Key");
             Key dhKey = dhh.calculateKey(Yclient);
             System.out.println("Key was successfully generated");System.out.println(System.lineSeparator());
             /////////////////////////////////////
             		
             
-            //Generazione dell'Initialization Vector
+            /* Generazione dell'Initialization Vector
+             * Anche in questo caso l'IV è scelto staticamente per il testing
+             * Un implementazione reale di cifratura con CBC richiede che l'IV sia scelto in modo casuale ed sia monouso*/
             String ivString = "1234567812345678";
-            IvParameterSpec iv = new IvParameterSpec(ivString.getBytes()); //Si usa una stringa predefinita per generare il vettore di inizializzazione
-            out.println(ivString);											//da utilizzare per la cifrare/decifrare i messaggi con CBC
+            IvParameterSpec iv = new IvParameterSpec(ivString.getBytes());
+            out.println(ivString);
             System.out.println("Sent IV");System.out.println(System.lineSeparator());
             
             //Regular communication
@@ -112,11 +125,6 @@ public class Server {
         } catch (IOException e) {
             e.printStackTrace();
         }
-    }
-
-    
-    
-    
-    
+    }   
     
 }
